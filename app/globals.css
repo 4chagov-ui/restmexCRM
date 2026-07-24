@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(226, 232, 240, 0.9), transparent 32rem),
+    linear-gradient(180deg, #ffffff, #f8fafc 42%, #f1f5f9);
+  color: #020617;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+@keyframes history-timeline-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-timeline-item {
+  animation: history-timeline-in 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-timeline-item {
+    animation: none;
+  }
+}
