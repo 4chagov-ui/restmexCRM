@@ -14,6 +14,8 @@ type LoginPageProps = {
 const errorMessages: Record<string, string> = {
   missing: "Введите email и пароль.",
   invalid: "Не удалось войти. Проверьте email и пароль.",
+  config:
+    "Сервер не видит ключи Supabase. Проверьте Environment Variables в Vercel и сделайте Redeploy.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

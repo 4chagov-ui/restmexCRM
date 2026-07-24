@@ -1,9 +1,10 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHomePathForRole } from "@/lib/auth/permissions";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -12,7 +13,6 @@ function getString(formData: FormData, key: string) {
 }
 
 export async function signInAction(formData: FormData) {
-  const supabase = await createClient();
   const email = getString(formData, "email");
   const password = getString(formData, "password");
 
@@ -20,21 +20,35 @@ export async function signInAction(formData: FormData) {
     redirect("/login?error=missing");
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    redirect("/login?error=invalid");
+  if (!hasSupabaseEnv()) {
+    redirect("/login?error=config");
   }
 
-  const context = await getCurrentUser();
-  redirect(getHomePathForRole(context.role));
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      redirect("/login?error=invalid");
+    }
+
+    const context = await getCurrentUser();
+    redirect(getHomePathForRole(context.role));
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect("/login?error=config");
+  }
 }
 
 export async function signOutAction() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch {
+    // Still send user to login if env/session cleanup fails.
+  }
   redirect("/login");
 }
