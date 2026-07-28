@@ -146,7 +146,7 @@ export async function transferRequestToOutsource(input: {
       rpcError.code === "PGRST202" ||
       /transfer_request_to_outsource|Could not find/i.test(rpcError.message)
     ) {
-      await transferRequestToOutsourceAppLevel(input, affectedMechanics);
+      await transferRequestToOutsourceAppLevel(input);
     } else {
       throw rpcError;
     }
@@ -236,18 +236,15 @@ export async function returnRequestFromOutsource(input: {
   return { ok: true as const };
 }
 
-async function transferRequestToOutsourceAppLevel(
-  input: {
-    requestId: string;
-    actorId: string;
-    contractor: string;
-    contact: string;
-    comment: string;
-    expectedDate: string | null;
-    outsourcedAt: string;
-  },
-  _affectedMechanics: string[],
-) {
+async function transferRequestToOutsourceAppLevel(input: {
+  requestId: string;
+  actorId: string;
+  contractor: string;
+  contact: string;
+  comment: string;
+  expectedDate: string | null;
+  outsourcedAt: string;
+}) {
   const supabase = await createClient();
 
   const { error: removeError } = await supabase

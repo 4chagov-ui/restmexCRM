@@ -477,34 +477,6 @@ function adjustOverdue(
   return current;
 }
 
-function sortUnplannedRequests(requests: TodayRequestItem[]) {
-  return [...requests].sort((a, b) => {
-    const urgencyDelta = urgencyRank(a.urgency) - urgencyRank(b.urgency);
-
-    if (urgencyDelta !== 0) {
-      return urgencyDelta;
-    }
-
-    return Date.parse(a.created_at) - Date.parse(b.created_at);
-  });
-}
-
-function urgencyRank(value: string) {
-  if (value === "critical") {
-    return 1;
-  }
-
-  if (value === "high") {
-    return 2;
-  }
-
-  if (value === "normal") {
-    return 3;
-  }
-
-  return 4;
-}
-
 function markTimeOverlaps(requests: TodayRequestItem[]) {
   const active = requests.filter((request) => request.status !== "done");
 

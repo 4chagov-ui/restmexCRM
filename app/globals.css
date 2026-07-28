@@ -28,6 +28,14 @@ body {
   box-sizing: border-box;
 }
 
+/* iOS Safari: native date/time controls must not force horizontal overflow */
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
 ::selection {
   background: #0f172a;
   color: #ffffff;

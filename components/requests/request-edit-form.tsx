@@ -40,12 +40,12 @@ const statusOptions: Array<{ value: RequestStatus; label: string }> = [
 ];
 
 const fieldClassName =
-  "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/5";
+  "mt-1.5 box-border h-11 w-full max-w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/5";
 
 const textareaClassName =
-  "mt-1.5 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/5";
+  "mt-1.5 box-border min-h-28 w-full max-w-full min-w-0 resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/5";
 
-const labelClassName = "block text-xs font-medium text-slate-500";
+const labelClassName = "block min-w-0 text-xs font-medium text-slate-500";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "2-digit",

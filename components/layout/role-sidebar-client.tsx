@@ -52,23 +52,23 @@ export function RoleSidebarClient({
   const activeHref = getActiveHref(pathname, items);
 
   return (
-    <aside className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl lg:h-screen lg:w-72 lg:shrink-0 lg:border-b-0 lg:border-r">
-      <div className="flex h-full flex-col gap-5 px-4 py-4 lg:px-5 lg:py-6">
-        <Link className="flex items-center gap-3 px-2" href={role === "mechanic" ? "/work/today" : "/today"}>
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white shadow-lg shadow-slate-300/70">
+    <aside className="sticky top-0 z-20 min-w-0 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl lg:h-screen lg:w-72 lg:shrink-0 lg:border-b-0 lg:border-r">
+      <div className="flex h-full min-w-0 flex-col gap-5 px-4 py-4 lg:px-5 lg:py-6">
+        <Link className="flex min-w-0 items-center gap-3 px-2" href={role === "mechanic" ? "/work/today" : "/today"}>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white shadow-lg shadow-slate-300/70">
             RM
           </span>
-          <span>
-            <span className="block text-sm font-semibold text-slate-950">
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-slate-950">
               RestMex CRM
             </span>
-            <span className="block text-xs text-slate-500">
+            <span className="block truncate text-xs text-slate-500">
               {role === "mechanic" ? "Рабочее место" : "MVP workspace"}
             </span>
           </span>
         </Link>
 
-        <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+        <nav className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
           {items.map((item) => {
             const active = item.href === activeHref;
 

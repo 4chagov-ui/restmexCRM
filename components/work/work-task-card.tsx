@@ -177,8 +177,8 @@ export function WorkTaskCard({
 
   return (
     <>
-      <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/50">
-        <div className="flex flex-wrap items-center gap-2">
+      <article className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/50">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="rounded-lg bg-slate-950 px-2.5 py-1 text-xs font-semibold text-white">
             #{request.request_number ?? "—"}
           </span>
@@ -269,10 +269,10 @@ export function WorkTaskCard({
           </p>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           <RequestReturnLink
             basePath="/work/requests"
-            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-950"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-950"
             requestId={request.id}
           >
             {showOpenOnly &&
@@ -285,7 +285,7 @@ export function WorkTaskCard({
 
           {showStart ? (
             <button
-              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-base font-semibold text-sky-950 disabled:opacity-50"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-base font-semibold text-sky-950 disabled:opacity-50"
               disabled={isPending}
               onClick={handleStart}
               type="button"
@@ -296,7 +296,7 @@ export function WorkTaskCard({
 
           {showCompletePrimary ? (
             <button
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white disabled:opacity-50"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white disabled:opacity-50"
               disabled={isPending}
               onClick={() => {
                 setError(null);
@@ -311,7 +311,7 @@ export function WorkTaskCard({
 
           {showCompletePart ? (
             <button
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white disabled:opacity-50"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white disabled:opacity-50"
               disabled={isPending}
               onClick={() => {
                 setError(null);

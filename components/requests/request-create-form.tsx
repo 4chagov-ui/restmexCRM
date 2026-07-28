@@ -32,9 +32,9 @@ type RequestCreateFormProps = {
 };
 
 const inputClassName =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-950 shadow-sm shadow-slate-200/40 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
+  "mt-2 box-border w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-950 shadow-sm shadow-slate-200/40 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
 
-const labelClassName = "text-sm font-medium text-slate-800";
+const labelClassName = "min-w-0 text-sm font-medium text-slate-800";
 
 function SectionHeader({
   eyebrow,
@@ -211,12 +211,12 @@ export function RequestCreateForm({
       </div>
 
       <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/90 p-4 backdrop-blur sm:flex-row sm:justify-end sm:p-5">
-        <a
-          className="inline-flex justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-50"
+        <Link
+          className="inline-flex w-full justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-50 sm:w-auto"
           href="/requests"
         >
           Отмена
-        </a>
+        </Link>
         <FormSubmitButton
           className="inline-flex justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-300/80 transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           pendingLabel="Создание…"

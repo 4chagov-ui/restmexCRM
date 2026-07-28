@@ -42,7 +42,7 @@ export async function getAssigneesForRequests(requestIds: string[]) {
   }
 
   const supabase = await createClient();
-  let query = supabase
+  const query = supabase
     .from("request_assignees")
     .select(
       "id, request_id, employee_id, role, participation_status, started_at, completed_at",

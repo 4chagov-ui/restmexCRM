@@ -12,10 +12,10 @@ type RequestAssigneesFieldsProps = {
 };
 
 const inputClassName =
-  "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition hover:border-slate-300 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/5";
+  "mt-1.5 box-border h-11 w-full max-w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition hover:border-slate-300 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/5";
 
 const inputClassNameComfortable =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-950 shadow-sm outline-none transition hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
+  "mt-2 box-border w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-950 shadow-sm outline-none transition hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
 
 export function RequestAssigneesFields({
   compact = false,
@@ -63,8 +63,8 @@ export function RequestAssigneesFields({
     <div
       className={
         compact
-          ? "rounded-xl border border-slate-200 bg-slate-50/80 p-3"
-          : "md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+          ? "min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3"
+          : "md:col-span-2 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
       }
     >
       <h3
@@ -147,9 +147,9 @@ export function RequestAssigneesFields({
           )}
         </div>
 
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-2 flex min-w-0 flex-col gap-2 sm:flex-row">
           <select
-            className={controlClass}
+            className={`${controlClass} min-w-0 flex-1`}
             onChange={(event) => setPickerId(event.target.value)}
             value={pickerId}
           >
@@ -163,8 +163,8 @@ export function RequestAssigneesFields({
           <button
             className={
               compact
-                ? "inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 disabled:opacity-50"
-                : "inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-50"
+                ? "inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 disabled:opacity-50 sm:w-auto"
+                : "inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-50 sm:w-auto"
             }
             disabled={!pickerId}
             onClick={addParticipant}

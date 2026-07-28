@@ -15,9 +15,9 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
-        <div className="min-h-screen lg:flex">
+        <div className="min-h-screen overflow-x-hidden lg:flex">
           <RoleSidebar />
-          <div className="min-w-0 flex-1">{children}</div>
+          <div className="min-w-0 flex-1 overflow-x-hidden">{children}</div>
         </div>
       </body>
     </html>

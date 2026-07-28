@@ -18,7 +18,7 @@ export function TodayCompletedCard({
 
   return (
     <article
-      className="rounded-xl border border-slate-200 bg-slate-50/90 p-2.5 text-slate-600"
+      className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/90 p-2.5 text-slate-600"
       data-request-id={request.id}
     >
       <div className="flex flex-wrap items-center gap-1.5">

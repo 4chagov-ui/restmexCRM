@@ -238,7 +238,7 @@ export async function getTodayPlan(date: string): Promise<TodayPlan> {
 
 async function fetchTodayUnplanned(): Promise<RequestRow[]> {
   const supabase = await createClient();
-  let query = supabase
+  const query = supabase
     .from("requests")
     .select(todaySelect)
     .is("deleted_at", null)

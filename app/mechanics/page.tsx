@@ -22,10 +22,10 @@ export default async function MechanicsPage() {
         <section className="grid gap-3">
           {employees.map((employee) => (
             <article
-              className="rounded-3xl border border-slate-200 bg-white/90 px-5 py-4 shadow-lg shadow-slate-200/50"
+              className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white/90 px-5 py-4 shadow-lg shadow-slate-200/50"
               key={employee.id}
             >
-              <p className="text-lg font-semibold text-slate-950">
+              <p className="truncate text-lg font-semibold text-slate-950">
                 {employee.name}
               </p>
               <p className="mt-1 text-sm text-slate-500">

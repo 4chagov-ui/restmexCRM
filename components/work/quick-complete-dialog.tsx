@@ -95,9 +95,9 @@ export function QuickCompleteDialog({
           </p>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
             disabled={isPending}
             onClick={onCancel}
             type="button"
@@ -105,7 +105,7 @@ export function QuickCompleteDialog({
             Отмена
           </button>
           <button
-            className="min-h-12 rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white disabled:opacity-50"
+            className="min-h-12 w-full rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white disabled:opacity-50"
             disabled={isPending}
             onClick={onConfirm}
             type="button"

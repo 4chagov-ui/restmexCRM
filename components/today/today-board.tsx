@@ -249,17 +249,19 @@ export function TodayBoard({
       onDragStart={handleDragStart}
       sensors={sensors}
     >
-      <div className="w-full overflow-x-auto pb-2">
+      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-2">
         <div
           className="grid gap-4"
           style={
             columns.length > 0
               ? {
-                  gridTemplateColumns: `repeat(${columnCount}, minmax(350px, 1fr))`,
-                  minWidth: 1500,
+                  // Mobile ≈ 85vw per column; desktop stays ~350px as before.
+                  gridTemplateColumns: `repeat(${columnCount}, minmax(clamp(280px, 85vw, 350px), 1fr))`,
+                  minWidth: `calc(${columnCount} * clamp(280px, 85vw, 350px))`,
                 }
               : {
-                  gridTemplateColumns: "minmax(350px, 420px)",
+                  gridTemplateColumns:
+                    "minmax(clamp(280px, 85vw, 350px), 420px)",
                 }
           }
         >
@@ -414,7 +416,7 @@ function DroppableColumn({
 
   return (
     <section
-      className={`flex min-h-[28rem] min-w-0 flex-col rounded-2xl border p-3 shadow-lg shadow-slate-200/40 backdrop-blur ${
+      className={`flex min-h-[28rem] min-w-0 flex-col overflow-hidden rounded-2xl border p-3 shadow-lg shadow-slate-200/40 backdrop-blur ${
         isUnplanned
           ? "border-amber-200 bg-amber-50/80"
           : "border-slate-200 bg-white/80"
@@ -500,7 +502,11 @@ function SortableRequestCard({
         transition,
         opacity: isDragging ? 0.35 : 1,
       }}
-      className={canGrab ? "cursor-grab touch-none active:cursor-grabbing" : undefined}
+      className={
+        canGrab
+          ? "min-w-0 cursor-grab touch-none active:cursor-grabbing"
+          : "min-w-0"
+      }
       {...(canGrab ? { ...attributes, ...listeners } : {})}
     >
       <TodayRequestCard

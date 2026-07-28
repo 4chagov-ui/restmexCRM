@@ -76,7 +76,7 @@ export function LocationRequestsList({
                     #{request.request_number ?? "без номера"}
                   </RequestReturnLink>
                 </td>
-                <td className="min-w-72 px-5 py-4">
+                <td className="min-w-0 max-w-xs px-5 py-4 sm:max-w-md">
                   <RequestReturnLink
                     className="line-clamp-2 text-slate-700 hover:text-slate-950"
                     requestId={request.id}

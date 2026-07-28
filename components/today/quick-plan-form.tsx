@@ -6,7 +6,10 @@ import type { TodayRequestItem } from "@/lib/db/today";
 import type { PlanPayload } from "@/lib/today/board-state";
 
 const inputClassName =
-  "w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-950 shadow-sm outline-none transition hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
+  "mt-1 box-border block w-full max-w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-950 shadow-sm outline-none transition hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
+
+const labelClassName =
+  "flex min-w-0 flex-col text-[11px] font-semibold text-slate-600";
 
 type QuickPlanFormProps = {
   request: TodayRequestItem;
@@ -38,7 +41,7 @@ export function QuickPlanForm({
 
   return (
     <form
-      className="grid gap-2"
+      className="grid min-w-0 gap-2"
       onSubmit={(event) => {
         event.preventDefault();
 
@@ -71,15 +74,21 @@ export function QuickPlanForm({
         setIsSubmitting(false);
       }}
     >
+      {/*
+        Compact = узкая колонка Today (~350px): всегда 1 колонка.
+        На широких формах — адаптивная сетка от sm/xl.
+      */}
       <div
         className={`grid min-w-0 gap-2 ${
-          compact ? "grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-5"
+          compact
+            ? "grid-cols-1"
+            : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-5"
         }`}
       >
-        <label className="text-[11px] font-semibold text-slate-600">
+        <label className={labelClassName}>
           Дата
           <input
-            className={`${inputClassName} mt-1`}
+            className={inputClassName}
             defaultValue={request.planned_date ?? selectedDate}
             name="planned_date"
             required
@@ -87,13 +96,13 @@ export function QuickPlanForm({
           />
         </label>
 
-        <label className="text-[11px] font-semibold text-slate-600">
+        <label className={labelClassName}>
           Очередь
-          <span className="mt-0.5 block text-[10px] font-normal text-slate-400">
+          <span className="mt-0.5 text-[10px] font-normal leading-4 text-slate-400">
             по месту в колонке
           </span>
           <input
-            className={`${inputClassName} mt-1`}
+            className={inputClassName}
             defaultValue={request.queue_position ?? 1}
             min="1"
             name="queue_position"
@@ -102,20 +111,20 @@ export function QuickPlanForm({
           />
         </label>
 
-        <label className="text-[11px] font-semibold text-slate-600">
+        <label className={labelClassName}>
           Начало
           <input
-            className={`${inputClassName} mt-1`}
+            className={inputClassName}
             defaultValue={request.start_time?.slice(0, 5) ?? ""}
             name="start_time"
             type="time"
           />
         </label>
 
-        <label className="text-[11px] font-semibold text-slate-600">
+        <label className={labelClassName}>
           Окончание
           <input
-            className={`${inputClassName} mt-1`}
+            className={inputClassName}
             defaultValue={request.end_time?.slice(0, 5) ?? ""}
             name="end_time"
             type="time"
@@ -123,22 +132,22 @@ export function QuickPlanForm({
         </label>
 
         <label
-          className={`text-[11px] font-semibold text-slate-600 ${
-            compact ? "col-span-2" : ""
+          className={`${labelClassName} ${
+            compact ? "" : "sm:col-span-2 xl:col-span-1"
           }`}
         >
           Ответственный
           {lockAssignedTo ? (
             <>
               <input name="assigned_to" type="hidden" value={assignedDefault} />
-              <p className={`${inputClassName} mt-1 flex items-center bg-slate-50`}>
+              <p className={`${inputClassName} flex items-center bg-slate-50`}>
                 {employees.find((item) => item.id === assignedDefault)?.name ??
                   "Не выбран"}
               </p>
             </>
           ) : (
             <select
-              className={`${inputClassName} mt-1`}
+              className={inputClassName}
               defaultValue={assignedDefault}
               name="assigned_to"
               required
@@ -154,10 +163,14 @@ export function QuickPlanForm({
         </label>
       </div>
 
-      <div className={`grid gap-2 ${onCancel ? "grid-cols-2" : "grid-cols-1"}`}>
+      <div
+        className={`grid min-w-0 gap-2 ${
+          onCancel ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+        }`}
+      >
         {onCancel ? (
           <button
-            className="inline-flex w-full justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex w-full max-w-full justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             disabled={isSubmitting}
             onClick={onCancel}
             type="button"
@@ -166,7 +179,7 @@ export function QuickPlanForm({
           </button>
         ) : null}
         <button
-          className="inline-flex w-full justify-center rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-slate-300/80 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex w-full max-w-full justify-center rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-slate-300/80 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={
             employees.length === 0 ||
             isSubmitting ||

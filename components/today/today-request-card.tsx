@@ -64,7 +64,7 @@ export function TodayRequestCard({
   if (mode === "planned") {
     return (
       <article
-        className={`rounded-xl border p-3 shadow-sm ${
+        className={`min-w-0 overflow-hidden rounded-xl border p-3 shadow-sm ${
           draftPlanning
             ? "border-amber-300 bg-amber-50/70"
             : isDone
@@ -134,9 +134,9 @@ export function TodayRequestCard({
                 </span>
               </div>
 
-              <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <div className="mt-1.5 grid min-w-0 grid-cols-2 gap-1.5">
                 <RequestReturnLink
-                  className="inline-flex justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-950"
+                  className="inline-flex w-full min-w-0 justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-950"
                   onPointerDown={stopCardDrag}
                   requestId={request.id}
                   returnPath={`/today?date=${selectedDate}`}
@@ -145,12 +145,12 @@ export function TodayRequestCard({
                 </RequestReturnLink>
 
                 {isDone ? (
-                  <span className="inline-flex items-center justify-center rounded-lg bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700">
+                  <span className="inline-flex w-full min-w-0 items-center justify-center rounded-lg bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700">
                     Выполнено
                   </span>
                 ) : isInProgress ? (
                   <button
-                    className="rounded-lg bg-emerald-600 px-2 py-1.5 text-[11px] font-semibold text-white"
+                    className="w-full min-w-0 rounded-lg bg-emerald-600 px-2 py-1.5 text-[11px] font-semibold text-white"
                     onClick={() => onStatus(request.id, "done")}
                     onPointerDown={stopCardDrag}
                     type="button"
@@ -159,7 +159,7 @@ export function TodayRequestCard({
                   </button>
                 ) : (
                   <button
-                    className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-900"
+                    className="w-full min-w-0 rounded-lg border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-900"
                     onClick={() => onStatus(request.id, "in_progress")}
                     onPointerDown={stopCardDrag}
                     type="button"
@@ -171,7 +171,7 @@ export function TodayRequestCard({
             </>
           ) : (
             <div
-              className="mt-1 rounded-xl border border-amber-200 bg-white p-2.5"
+              className="mt-1 min-w-0 overflow-hidden rounded-xl border border-amber-200 bg-white p-2.5"
               onPointerDown={stopCardDrag}
             >
               <p className="mb-2 text-xs font-semibold text-slate-700">
@@ -197,7 +197,7 @@ export function TodayRequestCard({
 
   return (
     <article
-      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+      className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
       data-request-id={request.id}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
@@ -226,7 +226,7 @@ export function TodayRequestCard({
 
         {planOpen ? (
           <div
-            className="mt-1 rounded-xl border border-slate-100 bg-slate-50 p-2.5"
+            className="mt-1 min-w-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-2.5"
             onPointerDown={stopCardDrag}
           >
             <div className="mb-2 flex items-center justify-between gap-2">

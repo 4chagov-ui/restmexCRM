@@ -2,9 +2,9 @@ import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import type { LocationDetail } from "@/lib/db/locations";
 
 const inputClassName =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
+  "mt-2 box-border w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5";
 
-const labelClassName = "text-sm font-medium text-slate-800";
+const labelClassName = "min-w-0 text-sm font-medium text-slate-800";
 
 type LocationFormProps = {
   action: (formData: FormData) => void | Promise<void>;
