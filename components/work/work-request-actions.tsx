@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   completeMyPartAction,
@@ -7,6 +8,12 @@ import {
   startWorkAction,
   updateWorkRequestAction,
 } from "@/app/work/requests/[id]/actions";
+import { addWorkCommentAction } from "@/app/work/requests/[id]/comment-actions";
+import {
+  PhotoPicker,
+  photosToFormData,
+  type PhotoDraft,
+} from "@/components/attachments/photo-picker";
 import type { RequestStatus } from "@/lib/db/requests";
 import type { WorkRequestItem } from "@/lib/db/work";
 
@@ -15,7 +22,10 @@ type WorkRequestActionsProps = {
 };
 
 export function WorkRequestActions({ request }: WorkRequestActionsProps) {
+  const router = useRouter();
   const [comment, setComment] = useState(request.executor_comment ?? "");
+  const [feedComment, setFeedComment] = useState("");
+  const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [status, setStatus] = useState(request.status);
@@ -111,6 +121,40 @@ export function WorkRequestActions({ request }: WorkRequestActionsProps) {
     });
   }
 
+  function sendFeedComment() {
+    if (isPending) {
+      return;
+    }
+
+    setError(null);
+    setSaved(false);
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("body", feedComment);
+      photosToFormData(photos, formData);
+      const result = await addWorkCommentAction(request.id, formData);
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      for (const photo of photos) {
+        URL.revokeObjectURL(photo.previewUrl);
+      }
+      setPhotos([]);
+      setFeedComment("");
+      setSaved(true);
+
+      if (result.warnings && result.warnings.length > 0) {
+        setError(result.warnings.join(" "));
+      }
+
+      router.refresh();
+    });
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-200/50 sm:p-5">
       <h2 className="text-lg font-semibold tracking-tight text-slate-950">
@@ -174,12 +218,12 @@ export function WorkRequestActions({ request }: WorkRequestActionsProps) {
 
       <div className="mt-5 grid gap-4">
         <label className="text-sm font-medium text-slate-800">
-          Комментарий исполнителя
+          Итоговый комментарий при закрытии
           <span className="mt-0.5 block text-xs font-normal text-slate-500">
-            Комментарий — необязательно
+            Используется при статусах «Выполнено» / «Заказ запчастей». Необязательно.
           </span>
           <textarea
-            className="mt-2 min-h-36 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5"
+            className="mt-2 min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5"
             onChange={(event) => setComment(event.target.value)}
             placeholder="Можно оставить пустым"
             value={comment}
@@ -187,12 +231,49 @@ export function WorkRequestActions({ request }: WorkRequestActionsProps) {
         </label>
 
         <button
-          className="inline-flex min-h-12 w-full justify-center rounded-xl bg-slate-950 px-5 py-3 text-base font-semibold text-white disabled:opacity-50"
+          className="inline-flex min-h-12 w-full justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-base font-semibold text-slate-950 disabled:opacity-50"
           disabled={isPending}
           onClick={saveCommentOnly}
           type="button"
         >
-          {isPending ? "Сохраняем…" : "Сохранить комментарий"}
+          {isPending ? "Сохраняем…" : "Сохранить итоговый комментарий"}
+        </button>
+      </div>
+
+      <div className="mt-6 border-t border-slate-100 pt-5">
+        <h3 className="text-base font-semibold text-slate-950">
+          Новый комментарий в ленту
+        </h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Текст и/или фото. Появится в ленте заявки у всей команды.
+        </p>
+
+        <label className="mt-4 block text-sm font-medium text-slate-800">
+          Комментарий
+          <textarea
+            className="mt-2 min-h-28 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-950 focus:ring-4 focus:ring-slate-950/5"
+            onChange={(event) => setFeedComment(event.target.value)}
+            placeholder="Например: розетку закрепил"
+            value={feedComment}
+          />
+        </label>
+
+        <div className="mt-4">
+          <PhotoPicker
+            disabled={isPending}
+            label="Фото к комментарию"
+            onChange={setPhotos}
+            photos={photos}
+          />
+        </div>
+
+        <button
+          className="mt-4 inline-flex min-h-12 w-full justify-center rounded-xl bg-slate-950 px-5 py-3 text-base font-semibold text-white disabled:opacity-50"
+          disabled={isPending}
+          onClick={sendFeedComment}
+          type="button"
+        >
+          {isPending ? "Отправка…" : "Отправить"}
         </button>
       </div>
     </section>

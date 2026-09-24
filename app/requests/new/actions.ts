@@ -7,7 +7,10 @@ import {
   parseParticipantIds,
   syncRequestAssignees,
 } from "@/lib/db/assignees";
+import { uploadPhotosForNewRequest } from "@/app/requests/attachments-actions";
+import { collectPhotoFiles } from "@/lib/db/attachments";
 import { logRequestHistory } from "@/lib/db/request-history";
+import { MAX_PHOTOS_PER_OPERATION } from "@/lib/attachments/constants";
 
 type RequestType =
   | "repair"
@@ -35,7 +38,7 @@ function buildPhoneNote(phone: string) {
 }
 
 export async function createRequestAction(formData: FormData) {
-  await requireManagerUser();
+  const context = await requireManagerUser();
 
   const supabase = await createClient();
   const locationId = getString(formData, "location_id");
@@ -57,6 +60,10 @@ export async function createRequestAction(formData: FormData) {
   const participantIds = parseParticipantIds(formData);
   const startTime = getString(formData, "start_time");
   const endTime = getString(formData, "end_time");
+  const photoFiles = collectPhotoFiles(formData).slice(
+    0,
+    MAX_PHOTOS_PER_OPERATION,
+  );
 
   const { data: location } = await supabase
     .from("locations")
@@ -110,6 +117,24 @@ export async function createRequestAction(formData: FormData) {
         status: (data.status as string | null) ?? "needs_planning",
       },
     });
+  }
+
+  let photoFailed = 0;
+  if (data?.id && photoFiles.length > 0) {
+    const uploadResult = await uploadPhotosForNewRequest(
+      data.id,
+      photoFiles,
+      context.profile.id,
+    );
+    photoFailed = uploadResult.failures.length;
+  }
+
+  if (data?.id) {
+    const params = new URLSearchParams({ saved: "1" });
+    if (photoFailed > 0) {
+      params.set("photoErrors", String(photoFailed));
+    }
+    redirect(`/requests/${data.id}?${params.toString()}`);
   }
 
   redirect("/requests");

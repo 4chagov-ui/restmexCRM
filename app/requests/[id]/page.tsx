@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RequestPhotosPanel } from "@/components/attachments/request-photos-panel";
+import { RequestCommentsFeed } from "@/components/attachments/request-comments-feed";
 import { RequestEditForm } from "@/components/requests/request-edit-form";
 import { RequestHistorySection } from "@/components/requests/request-history-section";
 import { requireManagerUser } from "@/lib/auth/current-user";
+import {
+  listRequestLevelPhotos,
+  signAttachmentUrls,
+} from "@/lib/db/attachments";
 import { getActiveEmployees } from "@/lib/db/employees";
+import { listRequestComments } from "@/lib/db/request-comments";
 import { getRequestById } from "@/lib/db/requests";
 import { getRequestHistory } from "@/lib/db/request-history";
 import { getSafeReturnTo } from "@/lib/navigation/return-to";
@@ -17,6 +24,7 @@ type RequestDetailPageProps = {
   searchParams: Promise<{
     saved?: string;
     returnTo?: string;
+    photoErrors?: string;
   }>;
 };
 
@@ -27,24 +35,34 @@ export default async function RequestDetailPage({
   await requireManagerUser();
 
   const { id } = await params;
-  const { saved, returnTo: returnToParam } = await searchParams;
+  const {
+    saved,
+    returnTo: returnToParam,
+    photoErrors,
+  } = await searchParams;
   const cancelHref = getSafeReturnTo(returnToParam ?? null, "/requests");
-  const [request, employees] = await Promise.all([
+  const [request, employees, photoRows, comments] = await Promise.all([
     getRequestById(id),
     getActiveEmployees(),
+    listRequestLevelPhotos(id),
+    listRequestComments(id),
   ]);
 
   if (!request) {
     notFound();
   }
 
-  const history = await getRequestHistory({
-    requestId: id,
-    limit: 50,
-    offset: 0,
-  });
+  const [history, photos] = await Promise.all([
+    getRequestHistory({
+      requestId: id,
+      limit: 50,
+      offset: 0,
+    }),
+    signAttachmentUrls(photoRows),
+  ]);
 
   const assignees = request.assignees;
+  const photoErrorCount = Number(photoErrors ?? "0");
 
   return (
     <main className="min-h-screen px-3 py-4 sm:px-4 lg:px-6">
@@ -52,6 +70,14 @@ export default async function RequestDetailPage({
         {saved === "1" ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
             Изменения сохранены.
+          </div>
+        ) : null}
+
+        {photoErrorCount > 0 ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+            Заявка создана, но {photoErrorCount}{" "}
+            {photoErrorCount === 1 ? "фотография не загрузилась" : "фотографий не загрузились"}
+            . Можно добавить их ниже.
           </div>
         ) : null}
 
@@ -79,12 +105,25 @@ export default async function RequestDetailPage({
           </div>
         </header>
 
+        <RequestPhotosPanel
+          canEdit
+          initialPhotos={photos}
+          requestId={id}
+          title="Фотографии проблемы"
+        />
+
         <RequestEditForm
           assignees={assignees}
           cancelHref={cancelHref}
           employees={employees}
           request={request}
           returnTo={returnToParam ? cancelHref : null}
+        />
+
+        <RequestCommentsFeed
+          comments={comments}
+          legacyExecutorComment={request.executor_comment}
+          legacyManagerComment={request.manager_comment}
         />
 
         <RequestHistorySection

@@ -93,6 +93,8 @@ const ACTION_TITLES: Record<RequestHistoryAction, string> = {
   comment_added: "Добавлен комментарий",
   comment_updated: "Обновлён комментарий",
   comment_deleted: "Удалён комментарий",
+  attachment_added: "Добавлены фотографии",
+  attachment_removed: "Удалена фотография",
 };
 
 export type HistoryTone =
@@ -135,6 +137,8 @@ const ACTION_VISUALS: Record<string, HistoryVisual> = {
   comment_added: { icon: "💬", tone: "edit" },
   comment_updated: { icon: "💬", tone: "edit" },
   comment_deleted: { icon: "💬", tone: "edit" },
+  attachment_added: { icon: "📷", tone: "edit" },
+  attachment_removed: { icon: "📷", tone: "edit" },
 };
 
 export const HISTORY_TONE_STYLES: Record<
@@ -380,6 +384,7 @@ function buildTitle(event: RequestHistoryRow): string {
   const action = event.action as RequestHistoryAction;
   const base = ACTION_TITLES[action] ?? "Изменение заявки";
   const label = fieldLabel(event.field_name);
+  const metadata = event.metadata ?? {};
 
   if (action === "request_updated" && label) {
     return `Изменено: ${label}`;
@@ -387,6 +392,12 @@ function buildTitle(event: RequestHistoryRow): string {
 
   if (action === "schedule_changed" && label) {
     return `Изменено: ${label}`;
+  }
+
+  if (action === "attachment_added") {
+    const count = metaNumber(metadata, "count");
+    if (count === 1) return "Добавлена 1 фотография";
+    if (count !== null) return `Добавлено ${count} фотографий`;
   }
 
   return base;
@@ -533,6 +544,30 @@ function buildNotes(event: RequestHistoryRow): string[] {
     metaString(metadata, "scope") === "participant"
   ) {
     notes.push("Завершена своя часть");
+  }
+
+  if (action === "attachment_added") {
+    const count = metaNumber(metadata, "count");
+    if (count !== null) {
+      notes.push(
+        count === 1 ? "Добавлена 1 фотография" : `Добавлено ${count} фотографий`,
+      );
+    }
+  }
+
+  if (action === "attachment_removed") {
+    notes.push("Фотография удалена");
+  }
+
+  if (action === "comment_added") {
+    const photoCount = metaNumber(metadata, "photoCount");
+    if (photoCount !== null && photoCount > 0) {
+      notes.push(
+        photoCount === 1
+          ? "С 1 фотографией"
+          : `С ${photoCount} фотографиями`,
+      );
+    }
   }
 
   return notes;

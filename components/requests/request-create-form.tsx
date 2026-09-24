@@ -6,6 +6,11 @@ import type { EmployeeOption } from "@/lib/db/employees";
 import type { LocationOption } from "@/lib/db/locations";
 import { createRequestAction } from "@/app/requests/new/actions";
 import { RequestAssigneesFields } from "@/components/requests/request-assignees-fields";
+import {
+  PhotoPicker,
+  photosToFormData,
+  type PhotoDraft,
+} from "@/components/attachments/photo-picker";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 
 const requestTypes = [
@@ -69,14 +74,39 @@ export function RequestCreateForm({
     ? (initialLocationId ?? "")
     : "";
   const [selectedLocationId, setSelectedLocationId] = useState(defaultLocationId);
+  const [photos, setPhotos] = useState<PhotoDraft[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
   const selectedLocation = useMemo(
     () => locations.find((location) => location.id === selectedLocationId),
     [locations, selectedLocationId],
   );
 
+  async function handleSubmit(formData: FormData) {
+    setFormError(null);
+    photosToFormData(photos, formData);
+
+    try {
+      await createRequestAction(formData);
+    } catch (error) {
+      // redirect() throws a special NEXT_REDIRECT error — rethrow it.
+      if (
+        error &&
+        typeof error === "object" &&
+        "digest" in error &&
+        typeof (error as { digest?: string }).digest === "string" &&
+        (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+      ) {
+        throw error;
+      }
+      setFormError(
+        error instanceof Error ? error.message : "Не удалось создать заявку.",
+      );
+    }
+  }
+
   return (
     <form
-      action={createRequestAction}
+      action={handleSubmit}
       className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/60"
     >
       <SectionHeader
@@ -116,10 +146,10 @@ export function RequestCreateForm({
           Адрес
           <input
             className={inputClassName}
-            readOnly
-            value={selectedLocation?.address ?? ""}
             name="address"
             placeholder="Город, улица, дом"
+            readOnly
+            value={selectedLocation?.address ?? ""}
           />
         </label>
 
@@ -127,10 +157,10 @@ export function RequestCreateForm({
           Контакт
           <input
             className={inputClassName}
-            readOnly
-            value={selectedLocation?.contact ?? ""}
             name="contact"
             placeholder="Имя управляющего или контактного лица"
+            readOnly
+            value={selectedLocation?.contact ?? ""}
           />
         </label>
 
@@ -138,11 +168,11 @@ export function RequestCreateForm({
           Телефон
           <input
             className={inputClassName}
-            readOnly
-            value={selectedLocation?.phone ?? ""}
             name="phone"
             placeholder="+7..."
+            readOnly
             type="tel"
+            value={selectedLocation?.phone ?? ""}
           />
         </label>
       </div>
@@ -183,9 +213,9 @@ export function RequestCreateForm({
       </div>
 
       <SectionHeader
-        description="Укажите временное окно и подробно опишите проблему."
+        description="Укажите временное окно, опишите проблему и при необходимости приложите фото."
         eyebrow="Шаг 3"
-        title="Время и описание"
+        title="Время, описание и фото"
       />
       <div className="grid gap-5 p-5 sm:p-6">
         <div className="grid gap-5 md:grid-cols-2">
@@ -208,7 +238,15 @@ export function RequestCreateForm({
             required
           />
         </label>
+
+        <PhotoPicker onChange={setPhotos} photos={photos} />
       </div>
+
+      {formError ? (
+        <div className="mx-5 mb-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 sm:mx-6">
+          {formError}
+        </div>
+      ) : null}
 
       <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/90 p-4 backdrop-blur sm:flex-row sm:justify-end sm:p-5">
         <Link

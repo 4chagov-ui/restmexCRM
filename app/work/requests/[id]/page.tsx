@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PhotoGallery } from "@/components/attachments/photo-gallery";
+import { RequestCommentsFeed } from "@/components/attachments/request-comments-feed";
 import { RequestHistorySection } from "@/components/requests/request-history-section";
 import { RequestStatusBadge } from "@/components/requests/request-status-badge";
 import { WorkRequestActions } from "@/components/work/work-request-actions";
 import { WorkTeamBlock } from "@/components/work/work-team-block";
 import { requireMechanicUser } from "@/lib/auth/current-user";
+import {
+  listRequestLevelPhotos,
+  signAttachmentUrls,
+} from "@/lib/db/attachments";
+import { listRequestComments } from "@/lib/db/request-comments";
 import { getRequestHistory } from "@/lib/db/request-history";
 import { getMechanicRequestById } from "@/lib/db/work";
 import { getSafeReturnTo } from "@/lib/navigation/return-to";
@@ -48,12 +55,17 @@ export default async function WorkRequestDetailPage({
     notFound();
   }
 
-  // Only after membership check — do not probe history for foreign request ids.
-  const history = await getRequestHistory({
-    requestId: id,
-    limit: 50,
-    offset: 0,
-  });
+  // Only after membership check — do not probe history/media for foreign request ids.
+  const [history, photoRows, comments] = await Promise.all([
+    getRequestHistory({
+      requestId: id,
+      limit: 50,
+      offset: 0,
+    }),
+    listRequestLevelPhotos(id),
+    listRequestComments(id),
+  ]);
+  const photos = await signAttachmentUrls(photoRows);
 
   const phone = request.location?.phone;
 
@@ -67,10 +79,13 @@ export default async function WorkRequestDetailPage({
                 Заявка
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                #{request.request_number ?? "без номера"}
+                {request.location?.name ?? "Заведение не указано"}
               </h1>
               <p className="mt-2 text-base leading-7 text-slate-600">
-                {request.location?.name ?? "Заведение не указано"}
+                {request.location?.address ?? "Адрес не указан"}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                #{request.request_number ?? "без номера"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <RequestStatusBadge status={request.status} />
@@ -152,15 +167,24 @@ export default async function WorkRequestDetailPage({
             </p>
           </div>
 
-          <div className="mt-3 rounded-xl bg-amber-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
-              Комментарий менеджера
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Фотографии
             </p>
-            <p className="mt-2 text-sm leading-6 text-amber-950">
-              {request.manager_comment ?? "Комментария нет"}
-            </p>
+            <div className="mt-3">
+              <PhotoGallery
+                emptyLabel="Фотографий проблемы пока нет"
+                photos={photos}
+              />
+            </div>
           </div>
         </section>
+
+        <RequestCommentsFeed
+          comments={comments}
+          legacyExecutorComment={request.executor_comment}
+          legacyManagerComment={request.manager_comment}
+        />
 
         <WorkTeamBlock
           assignees={request.assignees}
