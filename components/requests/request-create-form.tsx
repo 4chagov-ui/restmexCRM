@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
 import type { EmployeeOption } from "@/lib/db/employees";
 import type { LocationOption } from "@/lib/db/locations";
 import { createRequestAction } from "@/app/requests/new/actions";
 import { RequestAssigneesFields } from "@/components/requests/request-assignees-fields";
-import {
-  PhotoPicker,
-  photosToFormData,
-  type PhotoDraft,
-} from "@/components/attachments/photo-picker";
+import { PhotoPicker, type PhotoDraft } from "@/components/attachments/photo-picker";
+import { uploadPhotosDirect } from "@/lib/attachments/upload-from-browser";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 
 const requestTypes = [
@@ -76,32 +74,77 @@ export function RequestCreateForm({
   const [selectedLocationId, setSelectedLocationId] = useState(defaultLocationId);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const createdRequestId = useRef<string | null>(null);
+  const router = useRouter();
   const selectedLocation = useMemo(
     () => locations.find((location) => location.id === selectedLocationId),
     [locations, selectedLocationId],
   );
 
+  function isNextRedirect(error: unknown) {
+    return (
+      typeof error === "object" &&
+      error !== null &&
+      "digest" in error &&
+      typeof (error as { digest?: string }).digest === "string" &&
+      (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+    );
+  }
+
   async function handleSubmit(formData: FormData) {
     setFormError(null);
-    photosToFormData(photos, formData);
 
-    try {
-      await createRequestAction(formData);
-    } catch (error) {
-      // redirect() throws a special NEXT_REDIRECT error — rethrow it.
-      if (
-        error &&
-        typeof error === "object" &&
-        "digest" in error &&
-        typeof (error as { digest?: string }).digest === "string" &&
-        (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
-      ) {
-        throw error;
+    let requestId = createdRequestId.current;
+
+    if (!requestId) {
+      try {
+        const created = await createRequestAction(formData);
+        if (created.requestId) {
+          createdRequestId.current = created.requestId;
+          requestId = created.requestId;
+        }
+        if (!created.ok) {
+          setFormError(created.error);
+          return;
+        }
+        requestId = created.requestId;
+        createdRequestId.current = requestId;
+      } catch (error) {
+        if (isNextRedirect(error)) {
+          throw error;
+        }
+        setFormError("Не удалось создать заявку. Попробуйте ещё раз.");
+        return;
       }
-      setFormError(
-        error instanceof Error ? error.message : "Не удалось создать заявку.",
-      );
     }
+
+    let failed = 0;
+    if (photos.length > 0 && requestId) {
+      try {
+        const upload = await uploadPhotosDirect({
+          requestId,
+          files: photos.map((photo) => photo.file),
+          scope: "request",
+        });
+        failed = upload.failures.length;
+      } catch {
+        setFormError(
+          "Заявка создана, но не удалось загрузить фотографии. Нажмите «Создать заявку» ещё раз — повторно заявка не создастся.",
+        );
+        return;
+      }
+    }
+
+    if (!requestId) {
+      setFormError("Не удалось создать заявку. Попробуйте ещё раз.");
+      return;
+    }
+
+    const params = new URLSearchParams({ saved: "1" });
+    if (failed > 0) {
+      params.set("photoErrors", String(failed));
+    }
+    router.push(`/requests/${requestId}?${params.toString()}`);
   }
 
   return (

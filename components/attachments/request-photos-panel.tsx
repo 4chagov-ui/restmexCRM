@@ -4,14 +4,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import {
   deleteRequestPhotoAction,
-  uploadRequestPhotosAction,
 } from "@/app/requests/attachments-actions";
 import { PhotoGallery } from "@/components/attachments/photo-gallery";
 import {
   PhotoPicker,
-  photosToFormData,
   type PhotoDraft,
 } from "@/components/attachments/photo-picker";
+import { uploadPhotosDirect } from "@/lib/attachments/upload-from-browser";
 import type { AttachmentWithUrl } from "@/lib/db/attachments";
 
 type RequestPhotosPanelProps = {
@@ -48,11 +47,16 @@ export function RequestPhotosPanel({
     setMessage(null);
 
     startTransition(async () => {
-      const formData = photosToFormData(drafts, new FormData());
-      const result = await uploadRequestPhotosAction(requestId, formData);
+      const result = await uploadPhotosDirect({
+        requestId,
+        files: drafts.map((draft) => draft.file),
+        scope: "request",
+      });
 
-      if (!result.ok) {
-        setError(result.error);
+      if (result.uploaded === 0) {
+        setError(
+          result.failures[0] ?? "Не удалось загрузить фотографии.",
+        );
         return;
       }
 
@@ -61,9 +65,9 @@ export function RequestPhotosPanel({
       }
       setDrafts([]);
 
-      if (result.warnings && result.warnings.length > 0) {
+      if (result.failures.length > 0) {
         setMessage(
-          `Загружено ${result.uploaded}. Часть фото не сохранилась: ${result.warnings.join(" ")}`,
+          `Загружено ${result.uploaded}. Часть фото не сохранилась: ${result.failures.join(" ")}`,
         );
       } else {
         setMessage(

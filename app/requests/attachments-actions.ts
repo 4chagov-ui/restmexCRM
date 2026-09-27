@@ -14,10 +14,13 @@ import {
 } from "@/lib/db/attachments";
 import { logRequestHistory } from "@/lib/db/request-history";
 import {
+  buildAttachmentStoragePath,
   isAllowedImageMime,
   MAX_PHOTOS_PER_OPERATION,
   MAX_UPLOAD_BYTES,
+  REQUEST_ATTACHMENTS_BUCKET,
 } from "@/lib/attachments/constants";
+import { createClient } from "@/lib/supabase/server";
 import { getMechanicRequestById } from "@/lib/db/work";
 
 export type AttachmentActionResult =
@@ -244,4 +247,148 @@ export async function uploadPhotosForNewRequest(
   }
 
   return { uploaded, failures };
+}
+
+export type PhotoUploadTicket = {
+  attachmentId: string;
+  path: string;
+  token: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+export async function preparePhotoUploadTickets(input: {
+  requestId: string;
+  commentId?: string | null;
+  files: Array<{ fileName: string; mimeType: string; fileSize: number }>;
+}): Promise<{ ok: true; tickets: PhotoUploadTicket[] } | { ok: false; error: string }> {
+  const access = await assertCanAccessRequestMedia(input.requestId);
+  if (!access.ok) {
+    return access;
+  }
+
+  if (input.files.length === 0) {
+    return { ok: true, tickets: [] };
+  }
+
+  if (input.files.length > MAX_PHOTOS_PER_OPERATION) {
+    return {
+      ok: false,
+      error: `За один раз можно добавить не больше ${MAX_PHOTOS_PER_OPERATION} фото.`,
+    };
+  }
+
+  const supabase = await createClient();
+  const tickets: PhotoUploadTicket[] = [];
+
+  for (const file of input.files) {
+    if (!isAllowedImageMime(file.mimeType)) {
+      return { ok: false, error: `«${file.fileName}»: допустимы только JPEG, PNG или WebP.` };
+    }
+    if (file.fileSize > MAX_UPLOAD_BYTES) {
+      return { ok: false, error: `«${file.fileName}»: файл слишком большой.` };
+    }
+
+    const attachmentId = crypto.randomUUID();
+    const path = buildAttachmentStoragePath(
+      input.requestId,
+      attachmentId,
+      file.mimeType,
+    );
+    const { data, error } = await supabase.storage
+      .from(REQUEST_ATTACHMENTS_BUCKET)
+      .createSignedUploadUrl(path);
+
+    if (error || !data?.token) {
+      return {
+        ok: false,
+        error: error?.message || "Не удалось подготовить загрузку фотографий.",
+      };
+    }
+
+    tickets.push({
+      attachmentId,
+      path,
+      token: data.token,
+      fileName: file.fileName,
+      mimeType: file.mimeType,
+      fileSize: file.fileSize,
+    });
+  }
+
+  return { ok: true, tickets };
+}
+
+export async function commitPhotoUploads(input: {
+  requestId: string;
+  commentId?: string | null;
+  scope: "request" | "comment";
+  files: Array<{
+    attachmentId: string;
+    path: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+  }>;
+}): Promise<{ ok: true; uploaded: number; failures: string[] } | { ok: false; error: string }> {
+  const access = await assertCanAccessRequestMedia(input.requestId);
+  if (!access.ok) {
+    return access;
+  }
+
+  if (!access.context.profile) {
+    return { ok: false, error: "Профиль не найден." };
+  }
+
+  const supabase = await createClient();
+  let uploaded = 0;
+  const failures: string[] = [];
+
+  for (const file of input.files) {
+    if (!file.path.startsWith(`${input.requestId}/`)) {
+      failures.push(`«${file.fileName}»: неверный путь файла.`);
+      continue;
+    }
+
+    const payload: Record<string, unknown> = {
+      id: file.attachmentId,
+      request_id: input.requestId,
+      uploaded_by: access.context.profile.id,
+      source: "manual",
+      storage_path: file.path,
+      file_name: file.fileName,
+      mime_type: file.mimeType,
+      file_type: "photo",
+      file_size: file.fileSize,
+    };
+
+    if (input.commentId) {
+      payload.comment_id = input.commentId;
+    }
+
+    const { error } = await supabase.from("attachments").insert(payload);
+    if (error) {
+      await supabase.storage.from(REQUEST_ATTACHMENTS_BUCKET).remove([file.path]);
+      failures.push(`«${file.fileName}»: ${error.message}`);
+      continue;
+    }
+
+    uploaded += 1;
+  }
+
+  if (uploaded > 0) {
+    await logRequestHistory({
+      requestId: input.requestId,
+      action: "attachment_added",
+      metadata: {
+        count: uploaded,
+        scope: input.scope,
+        ...(input.commentId ? { commentId: input.commentId } : {}),
+      },
+    });
+  }
+
+  revalidateRequestPaths(input.requestId);
+  return { ok: true, uploaded, failures };
 }

@@ -8,12 +8,12 @@ import {
   startWorkAction,
   updateWorkRequestAction,
 } from "@/app/work/requests/[id]/actions";
-import { addWorkCommentAction } from "@/app/work/requests/[id]/comment-actions";
+import { addWorkCommentAction, logWorkCommentAction } from "@/app/work/requests/[id]/comment-actions";
 import {
   PhotoPicker,
-  photosToFormData,
   type PhotoDraft,
 } from "@/components/attachments/photo-picker";
+import { uploadPhotosDirect } from "@/lib/attachments/upload-from-browser";
 import type { RequestStatus } from "@/lib/db/requests";
 import type { WorkRequestItem } from "@/lib/db/work";
 
@@ -130,15 +130,38 @@ export function WorkRequestActions({ request }: WorkRequestActionsProps) {
     setSaved(false);
 
     startTransition(async () => {
-      const formData = new FormData();
-      formData.set("body", feedComment);
-      photosToFormData(photos, formData);
-      const result = await addWorkCommentAction(request.id, formData);
+      const body = feedComment.trim();
+      if (!body && photos.length === 0) {
+        setError("Напишите комментарий или добавьте фото.");
+        return;
+      }
+
+      const result = await addWorkCommentAction(request.id, body);
 
       if (!result.ok) {
         setError(result.error);
         return;
       }
+
+      let uploaded = 0;
+      let failures: string[] = [];
+      if (photos.length > 0) {
+        const upload = await uploadPhotosDirect({
+          requestId: request.id,
+          files: photos.map((photo) => photo.file),
+          commentId: result.commentId,
+          scope: "comment",
+        });
+        uploaded = upload.uploaded;
+        failures = upload.failures;
+      }
+
+      await logWorkCommentAction({
+        requestId: request.id,
+        commentId: result.commentId,
+        photoCount: uploaded,
+        hasText: body.length > 0,
+      });
 
       for (const photo of photos) {
         URL.revokeObjectURL(photo.previewUrl);
@@ -147,8 +170,12 @@ export function WorkRequestActions({ request }: WorkRequestActionsProps) {
       setFeedComment("");
       setSaved(true);
 
-      if (result.warnings && result.warnings.length > 0) {
-        setError(result.warnings.join(" "));
+      if (failures.length > 0) {
+        setError(
+          uploaded === 0
+            ? `Комментарий сохранён, но фото не загрузились: ${failures.join(" ")}`
+            : `Комментарий сохранён, но не удалось загрузить ${failures.length} фото.`,
+        );
       }
 
       router.refresh();
