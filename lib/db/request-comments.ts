@@ -69,9 +69,14 @@ export async function listRequestComments(requestId: string) {
     }
   }
 
-  const allPhotos = await listRequestAttachments(requestId);
-  const commentPhotos = allPhotos.filter((photo) => photo.comment_id != null);
-  const signedPhotos = await signAttachmentUrls(commentPhotos);
+  let signedPhotos: AttachmentWithUrl[] = [];
+  try {
+    const allPhotos = await listRequestAttachments(requestId);
+    const commentPhotos = allPhotos.filter((photo) => photo.comment_id != null);
+    signedPhotos = await signAttachmentUrls(commentPhotos);
+  } catch {
+    signedPhotos = [];
+  }
   const photosByComment = new Map<string, AttachmentWithUrl[]>();
 
   for (const photo of signedPhotos) {

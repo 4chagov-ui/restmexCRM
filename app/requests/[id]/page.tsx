@@ -41,24 +41,23 @@ export default async function RequestDetailPage({
     photoErrors,
   } = await searchParams;
   const cancelHref = getSafeReturnTo(returnToParam ?? null, "/requests");
-  const [request, employees, photoRows, comments] = await Promise.all([
+  const [request, employees] = await Promise.all([
     getRequestById(id),
     getActiveEmployees(),
-    listRequestLevelPhotos(id),
-    listRequestComments(id),
   ]);
 
   if (!request) {
     notFound();
   }
 
-  const [history, photos] = await Promise.all([
+  const [history, photos, comments] = await Promise.all([
     getRequestHistory({
       requestId: id,
       limit: 50,
       offset: 0,
-    }),
-    signAttachmentUrls(photoRows),
+    }).catch(() => ({ items: [], hasMore: false })),
+    loadRequestPhotos(id),
+    listRequestComments(id).catch(() => []),
   ]);
 
   const assignees = request.assignees;
@@ -105,12 +104,18 @@ export default async function RequestDetailPage({
           </div>
         </header>
 
-        <RequestPhotosPanel
-          canEdit
-          initialPhotos={photos}
-          requestId={id}
-          title="Фотографии проблемы"
-        />
+        {photos.failed ? (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900">
+            Не удалось загрузить фотографии.
+          </section>
+        ) : (
+          <RequestPhotosPanel
+            canEdit
+            initialPhotos={photos.rows}
+            requestId={id}
+            title="Фотографии проблемы"
+          />
+        )}
 
         <RequestEditForm
           assignees={assignees}
@@ -134,4 +139,16 @@ export default async function RequestDetailPage({
       </div>
     </main>
   );
+}
+
+async function loadRequestPhotos(requestId: string) {
+  try {
+    const rows = await listRequestLevelPhotos(requestId);
+    return {
+      failed: false,
+      rows: await signAttachmentUrls(rows),
+    };
+  } catch {
+    return { failed: true, rows: [] };
+  }
 }

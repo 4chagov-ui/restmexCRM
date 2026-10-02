@@ -123,12 +123,7 @@ export async function updateRequestAction(formData: FormData) {
   try {
     await syncRequestAssignees(requestId, assignedTo, participantIds);
   } catch (assigneeError) {
-    if (
-      !(assigneeError instanceof Error) ||
-      !assigneeError.message.includes("request_assignees")
-    ) {
-      throw assigneeError;
-    }
+    console.error("[updateRequestAction] assignees", assigneeError);
   }
 
   const locationIds = [
@@ -186,7 +181,11 @@ export async function updateRequestAction(formData: FormData) {
     locationNames,
   });
 
-  await logRequestHistoryMany(fieldEvents);
+  try {
+    await logRequestHistoryMany(fieldEvents);
+  } catch (historyError) {
+    console.error("[updateRequestAction] history", historyError);
+  }
 
   revalidatePath("/requests");
   revalidatePath(`/requests/${requestId}`);

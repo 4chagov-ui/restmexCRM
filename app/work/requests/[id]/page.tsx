@@ -56,16 +56,15 @@ export default async function WorkRequestDetailPage({
   }
 
   // Only after membership check — do not probe history/media for foreign request ids.
-  const [history, photoRows, comments] = await Promise.all([
+  const [history, photos, comments] = await Promise.all([
     getRequestHistory({
       requestId: id,
       limit: 50,
       offset: 0,
-    }),
-    listRequestLevelPhotos(id),
-    listRequestComments(id),
+    }).catch(() => ({ items: [], hasMore: false })),
+    loadWorkPhotos(id),
+    listRequestComments(id).catch(() => []),
   ]);
-  const photos = await signAttachmentUrls(photoRows);
 
   const phone = request.location?.phone;
 
@@ -172,10 +171,16 @@ export default async function WorkRequestDetailPage({
               Фотографии
             </p>
             <div className="mt-3">
-              <PhotoGallery
-                emptyLabel="Фотографий проблемы пока нет"
-                photos={photos}
-              />
+              {photos.failed ? (
+                <p className="text-sm font-medium text-amber-800">
+                  Не удалось загрузить фотографии.
+                </p>
+              ) : (
+                <PhotoGallery
+                  emptyLabel="Фотографий проблемы пока нет"
+                  photos={photos.rows}
+                />
+              )}
             </div>
           </div>
         </section>
@@ -216,6 +221,18 @@ function InfoCard({
       <dd className="mt-1 text-sm font-semibold text-slate-950">{value}</dd>
     </div>
   );
+}
+
+async function loadWorkPhotos(requestId: string) {
+  try {
+    const rows = await listRequestLevelPhotos(requestId);
+    return {
+      failed: false,
+      rows: await signAttachmentUrls(rows),
+    };
+  } catch {
+    return { failed: true, rows: [] };
+  }
 }
 
 function formatTimeRange(request: {
