@@ -76,6 +76,7 @@ export function RequestCreateForm({
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const createdRequestId = useRef<string | null>(null);
+  const tasksPending = useRef(false);
   const router = useRouter();
   const selectedLocation = useMemo(
     () => locations.find((location) => location.id === selectedLocationId),
@@ -96,8 +97,11 @@ export function RequestCreateForm({
     setFormError(null);
 
     let requestId = createdRequestId.current;
+    if (requestId) {
+      formData.set("existing_request_id", requestId);
+    }
 
-    if (!requestId) {
+    if (!requestId || tasksPending.current) {
       try {
         const created = await createRequestAction(formData);
         if (created.requestId) {
@@ -105,9 +109,11 @@ export function RequestCreateForm({
           requestId = created.requestId;
         }
         if (!created.ok) {
+          tasksPending.current = Boolean(created.requestId);
           setFormError(created.error);
           return;
         }
+        tasksPending.current = false;
         requestId = created.requestId;
         createdRequestId.current = requestId;
       } catch (error) {

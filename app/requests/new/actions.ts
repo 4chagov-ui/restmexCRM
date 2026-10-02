@@ -33,6 +33,22 @@ function buildPhoneNote(phone: string) {
   return phone ? `Телефон: ${phone}` : null;
 }
 
+async function insertRequestTasks(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  requestId: string,
+  titles: string[],
+) {
+  const { error } = await supabase.from("request_tasks").insert(
+    titles.map((title, index) => ({
+      request_id: requestId,
+      title,
+      position: index + 1,
+    })),
+  );
+
+  return error?.message ?? null;
+}
+
 export type CreateRequestResult =
   | { ok: true; requestId: string }
   | { ok: false; error: string; requestId?: string };
@@ -43,6 +59,7 @@ export async function createRequestAction(
   await requireManagerUser();
 
   const supabase = await createClient();
+  const existingRequestId = getString(formData, "existing_request_id");
   const locationId = getString(formData, "location_id");
   const description = getString(formData, "description");
   const taskTitles = formData
@@ -60,6 +77,24 @@ export async function createRequestAction(
       ok: false,
       error: "Добавьте описание или хотя бы один пункт работы.",
     };
+  }
+
+  if (existingRequestId) {
+    if (taskTitles.length > 0) {
+      const taskError = await insertRequestTasks(
+        supabase,
+        existingRequestId,
+        taskTitles,
+      );
+      if (taskError) {
+        return {
+          ok: false,
+          error: `Пункты работ не сохранились. ${taskError}`,
+          requestId: existingRequestId,
+        };
+      }
+    }
+    return { ok: true, requestId: existingRequestId };
   }
 
   const storedDescription = description || taskTitles.join("\n");
@@ -126,17 +161,11 @@ export async function createRequestAction(
   }
 
   if (taskTitles.length > 0) {
-    const { error: taskError } = await supabase.from("request_tasks").insert(
-      taskTitles.map((title, index) => ({
-        request_id: data.id,
-        title,
-        position: index + 1,
-      })),
-    );
-    if (taskError && !taskError.message.toLowerCase().includes("request_tasks")) {
+    const taskError = await insertRequestTasks(supabase, data.id, taskTitles);
+    if (taskError) {
       return {
         ok: false,
-        error: taskError.message,
+        error: `Заявка создана, но пункты работ не сохранились. ${taskError}`,
         requestId: data.id,
       };
     }
