@@ -13,6 +13,8 @@ import { getActiveEmployees } from "@/lib/db/employees";
 import { listRequestComments } from "@/lib/db/request-comments";
 import { getRequestById } from "@/lib/db/requests";
 import { getRequestHistory } from "@/lib/db/request-history";
+import { RequestTaskEditor } from "@/components/requests/request-task-editor";
+import { listRequestTasks } from "@/lib/db/request-tasks";
 import { getSafeReturnTo } from "@/lib/navigation/return-to";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +52,7 @@ export default async function RequestDetailPage({
     notFound();
   }
 
-  const [history, photos, comments] = await Promise.all([
+  const [history, photos, comments, tasks] = await Promise.all([
     getRequestHistory({
       requestId: id,
       limit: 50,
@@ -58,6 +60,7 @@ export default async function RequestDetailPage({
     }).catch(() => ({ items: [], hasMore: false })),
     loadRequestPhotos(id),
     listRequestComments(id).catch(() => []),
+    listRequestTasks(id).catch(() => []),
   ]);
 
   const assignees = request.assignees;
@@ -116,6 +119,8 @@ export default async function RequestDetailPage({
             title="Фотографии проблемы"
           />
         )}
+
+        <RequestTaskEditor initialTasks={tasks} requestId={id} />
 
         <RequestEditForm
           assignees={assignees}

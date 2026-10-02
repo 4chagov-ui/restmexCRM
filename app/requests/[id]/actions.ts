@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/assignees";
 import type { RequestStatus } from "@/lib/db/requests";
 import { logRequestHistoryMany } from "@/lib/db/request-history";
+import { assertRequestTasksComplete } from "@/lib/db/request-tasks";
 import { isUndefinedColumnError } from "@/lib/db/schema-errors";
 import { getSafeReturnTo } from "@/lib/navigation/return-to";
 import { buildRequestFieldHistoryEvents } from "@/lib/request-history/diff-request";
@@ -59,6 +60,13 @@ export async function updateRequestAction(formData: FormData) {
 
   if (!description) {
     throw new Error("Описание заявки не может быть пустым.");
+  }
+
+  if (status === "done") {
+    const tasksReady = await assertRequestTasksComplete(requestId);
+    if (!tasksReady.ok) {
+      throw new Error(tasksReady.error);
+    }
   }
 
   const requestSelect = `

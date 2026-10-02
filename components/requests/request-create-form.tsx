@@ -7,6 +7,7 @@ import type { EmployeeOption } from "@/lib/db/employees";
 import type { LocationOption } from "@/lib/db/locations";
 import { createRequestAction } from "@/app/requests/new/actions";
 import { RequestAssigneesFields } from "@/components/requests/request-assignees-fields";
+import { TaskDraftList } from "@/components/requests/task-draft-list";
 import { PhotoPicker, type PhotoDraft } from "@/components/attachments/photo-picker";
 import { uploadPhotosDirect } from "@/lib/attachments/upload-from-browser";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
@@ -278,9 +279,10 @@ export function RequestCreateForm({
             className={`${inputClassName} min-h-44 resize-y leading-6`}
             name="description"
             placeholder="Опишите, что произошло и что нужно сделать"
-            required
           />
         </label>
+
+        <TaskDraftList />
 
         <PhotoPicker onChange={setPhotos} photos={photos} />
       </div>

@@ -95,6 +95,8 @@ const ACTION_TITLES: Record<RequestHistoryAction, string> = {
   comment_deleted: "Удалён комментарий",
   attachment_added: "Добавлены фотографии",
   attachment_removed: "Удалена фотография",
+  task_completed: "Выполнен пункт работы",
+  task_reopened: "Пункт работы возвращён",
 };
 
 export type HistoryTone =
@@ -139,6 +141,8 @@ const ACTION_VISUALS: Record<string, HistoryVisual> = {
   comment_deleted: { icon: "💬", tone: "edit" },
   attachment_added: { icon: "📷", tone: "edit" },
   attachment_removed: { icon: "📷", tone: "edit" },
+  task_completed: { icon: "☑️", tone: "complete" },
+  task_reopened: { icon: "↩️", tone: "work" },
 };
 
 export const HISTORY_TONE_STYLES: Record<
@@ -567,6 +571,20 @@ function buildNotes(event: RequestHistoryRow): string[] {
           ? "С 1 фотографией"
           : `С ${photoCount} фотографиями`,
       );
+    }
+  }
+
+  if (action === "task_completed" || action === "task_reopened") {
+    const title = metaString(metadata, "taskTitle");
+    const name = metaString(metadata, "mechanicName");
+    if (name && title) {
+      notes.push(
+        action === "task_completed"
+          ? `${name} выполнил пункт: ${title}`
+          : `${name} снял пункт: ${title}`,
+      );
+    } else if (title) {
+      notes.push(title);
     }
   }
 

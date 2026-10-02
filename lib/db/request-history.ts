@@ -28,6 +28,8 @@ export const REQUEST_HISTORY_ACTIONS = [
   "comment_deleted",
   "attachment_added",
   "attachment_removed",
+  "task_completed",
+  "task_reopened",
 ] as const;
 
 export type RequestHistoryAction = (typeof REQUEST_HISTORY_ACTIONS)[number];

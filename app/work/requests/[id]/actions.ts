@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/work";
 import type { RequestStatus } from "@/lib/db/requests";
 import { logRequestHistory } from "@/lib/db/request-history";
+import { assertRequestTasksComplete } from "@/lib/db/request-tasks";
 
 export type WorkActionResult =
   | { ok: true }
@@ -227,6 +228,10 @@ export async function completeWorkAction(
     const trimmed = executorComment?.trim() ?? "";
     const nextComment =
       trimmed.length > 0 ? trimmed : currentRequest.executor_comment;
+    const tasksReady = await assertRequestTasksComplete(requestId);
+    if (!tasksReady.ok) {
+      return { ok: false, error: tasksReady.error };
+    }
     const now = new Date().toISOString();
 
     const updated = await updateMechanicRequest(context.employee.id, requestId, {

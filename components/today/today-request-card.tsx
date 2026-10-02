@@ -107,6 +107,11 @@ export function TodayRequestCard({
           <p className="line-clamp-2 text-xs leading-5 text-slate-600">
             {request.description}
           </p>
+          {request.task_total ? (
+            <p className="text-[11px] font-semibold text-slate-500">
+              {request.task_done ?? 0}/{request.task_total}
+            </p>
+          ) : null}
 
           {request.is_collaborative ? (
             <p
@@ -217,6 +222,11 @@ export function TodayRequestCard({
         <p className="line-clamp-2 text-xs leading-5 text-slate-600">
           {request.description}
         </p>
+        {request.task_total ? (
+          <p className="text-[11px] font-semibold text-slate-500">
+            {request.task_done ?? 0}/{request.task_total}
+          </p>
+        ) : null}
         <p className="truncate text-[11px] text-slate-400">
           {request.location?.address ?? "Адрес не указан"}
         </p>

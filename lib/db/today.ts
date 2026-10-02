@@ -7,6 +7,7 @@ import {
   type RequestAssignee,
 } from "@/lib/db/assignees";
 import { getActiveEmployees, getEmployeesById, type EmployeeOption } from "@/lib/db/employees";
+import { getTaskProgressMap } from "@/lib/db/request-tasks";
 import type { RequestStatus } from "@/lib/db/requests";
 import {
   getLocalDateKey,
@@ -45,6 +46,8 @@ export type TodayRequestItem = {
   assignees: RequestAssignee[];
   assignees_label: string;
   is_collaborative: boolean;
+  task_done?: number;
+  task_total?: number;
 };
 
 export type TodayPlan = {
@@ -176,6 +179,16 @@ export async function getTodayPlan(date: string): Promise<TodayPlan> {
   const requests = requestRows.map((request) =>
     mapRequest(request, employeesById, assigneesMap.get(request.id) ?? []),
   );
+  const taskProgress = await getTaskProgressMap(
+    requests.map((request) => request.id),
+  ).catch(() => new Map());
+  for (const request of requests) {
+    const progress = taskProgress.get(request.id);
+    if (progress && progress.total > 0) {
+      request.task_done = progress.done;
+      request.task_total = progress.total;
+    }
+  }
   const unplanned = sortUnplannedRequests(
     requests.filter((request) => isUnplannedRequest(request)),
   );

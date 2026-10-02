@@ -5,10 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireManagerUser } from "@/lib/auth/current-user";
 import { setRequestResponsible } from "@/lib/db/assignees";
 import type { RequestStatus } from "@/lib/db/requests";
-import {
-  logRequestHistory,
-  resolveEmployeeNames,
-} from "@/lib/db/request-history";
+import { logRequestHistory, resolveEmployeeNames } from "@/lib/db/request-history";
+import { assertRequestTasksComplete } from "@/lib/db/request-tasks";
 
 export type TodayActionResult =
   | { ok: true }
@@ -219,6 +217,12 @@ export async function saveTodayStatusAction(input: {
     }
 
     const previousStatus = currentRequest?.status as RequestStatus | undefined;
+    if (status === "done") {
+      const tasksReady = await assertRequestTasksComplete(requestId);
+      if (!tasksReady.ok) {
+        return tasksReady;
+      }
+    }
     const closedAt =
       status === "done"
         ? ((currentRequest?.closed_at as string | null) ??

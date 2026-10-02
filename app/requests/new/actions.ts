@@ -45,14 +45,24 @@ export async function createRequestAction(
   const supabase = await createClient();
   const locationId = getString(formData, "location_id");
   const description = getString(formData, "description");
+  const taskTitles = formData
+    .getAll("task_title")
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
 
   if (!locationId) {
     return { ok: false, error: "Выберите существующее заведение." };
   }
 
-  if (!description) {
-    return { ok: false, error: "Опишите проблему." };
+  if (!description && taskTitles.length === 0) {
+    return {
+      ok: false,
+      error: "Добавьте описание или хотя бы один пункт работы.",
+    };
   }
+
+  const storedDescription = description || taskTitles.join("\n");
 
   const phone = getString(formData, "phone");
   const contact = getString(formData, "contact");
@@ -73,8 +83,8 @@ export async function createRequestAction(
     .from("requests")
     .insert({
       location_id: locationId,
-      title: description.slice(0, 120),
-      description,
+      title: storedDescription.slice(0, 120),
+      description: storedDescription,
       request_type: requestType || "other",
       urgency: urgency || "normal",
       status: "needs_planning",
@@ -112,6 +122,23 @@ export async function createRequestAction(
           requestId: data.id,
         };
       }
+    }
+  }
+
+  if (taskTitles.length > 0) {
+    const { error: taskError } = await supabase.from("request_tasks").insert(
+      taskTitles.map((title, index) => ({
+        request_id: data.id,
+        title,
+        position: index + 1,
+      })),
+    );
+    if (taskError && !taskError.message.toLowerCase().includes("request_tasks")) {
+      return {
+        ok: false,
+        error: taskError.message,
+        requestId: data.id,
+      };
     }
   }
 

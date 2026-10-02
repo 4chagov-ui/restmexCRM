@@ -14,6 +14,8 @@ import {
 import { listRequestComments } from "@/lib/db/request-comments";
 import { getRequestHistory } from "@/lib/db/request-history";
 import { getMechanicRequestById } from "@/lib/db/work";
+import { WorkTaskChecklist } from "@/components/work/work-task-checklist";
+import { listRequestTasks } from "@/lib/db/request-tasks";
 import { getSafeReturnTo } from "@/lib/navigation/return-to";
 import { getPhoneHref } from "@/lib/phone";
 
@@ -56,7 +58,7 @@ export default async function WorkRequestDetailPage({
   }
 
   // Only after membership check — do not probe history/media for foreign request ids.
-  const [history, photos, comments] = await Promise.all([
+  const [history, photos, comments, tasks] = await Promise.all([
     getRequestHistory({
       requestId: id,
       limit: 50,
@@ -64,6 +66,7 @@ export default async function WorkRequestDetailPage({
     }).catch(() => ({ items: [], hasMore: false })),
     loadWorkPhotos(id),
     listRequestComments(id).catch(() => []),
+    listRequestTasks(id).catch(() => []),
   ]);
 
   const phone = request.location?.phone;
@@ -184,6 +187,8 @@ export default async function WorkRequestDetailPage({
             </div>
           </div>
         </section>
+
+        <WorkTaskChecklist initialTasks={tasks} requestId={id} />
 
         <RequestCommentsFeed
           comments={comments}
