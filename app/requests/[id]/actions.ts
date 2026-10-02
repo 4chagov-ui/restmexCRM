@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/assignees";
 import type { RequestStatus } from "@/lib/db/requests";
 import { logRequestHistoryMany } from "@/lib/db/request-history";
+import { isUndefinedColumnError } from "@/lib/db/schema-errors";
 import { getSafeReturnTo } from "@/lib/navigation/return-to";
 import { buildRequestFieldHistoryEvents } from "@/lib/request-history/diff-request";
 
@@ -60,10 +61,7 @@ export async function updateRequestAction(formData: FormData) {
     throw new Error("Описание заявки не может быть пустым.");
   }
 
-  const { data: currentRequest, error: currentError } = await supabase
-    .from("requests")
-    .select(
-      `
+  const requestSelect = `
         closed_at,
         location_id,
         description,
@@ -77,15 +75,25 @@ export async function updateRequestAction(formData: FormData) {
         queue_position,
         manager_comment,
         executor_comment,
-        execution_type,
         reported_by_name
-      `,
-    )
+      `;
+
+  let { data: currentRequest, error: currentError } = await supabase
+    .from("requests")
+    .select(`${requestSelect}, execution_type`)
     .eq("id", requestId)
     .single();
 
-  if (currentError) {
-    throw currentError;
+  if (currentError && isUndefinedColumnError(currentError)) {
+    ({ data: currentRequest, error: currentError } = await supabase
+      .from("requests")
+      .select(requestSelect)
+      .eq("id", requestId)
+      .single());
+  }
+
+  if (currentError || !currentRequest) {
+    throw currentError ?? new Error("Заявка не найдена.");
   }
 
   const closedAt =
@@ -159,7 +167,9 @@ export async function updateRequestAction(formData: FormData) {
       queue_position: currentRequest.queue_position as number | null,
       manager_comment: currentRequest.manager_comment as string | null,
       executor_comment: currentRequest.executor_comment as string | null,
-      execution_type: (currentRequest.execution_type as string | null) ?? null,
+      execution_type:
+        ((currentRequest as { execution_type?: string | null }).execution_type ??
+          null),
       reported_by_name: currentRequest.reported_by_name as string | null,
     },
     after: {
@@ -175,7 +185,9 @@ export async function updateRequestAction(formData: FormData) {
       queue_position: nextPayload.queue_position,
       manager_comment: nextPayload.manager_comment,
       executor_comment: nextPayload.executor_comment,
-      execution_type: (currentRequest.execution_type as string | null) ?? null,
+      execution_type:
+        ((currentRequest as { execution_type?: string | null }).execution_type ??
+          null),
       reported_by_name: currentRequest.reported_by_name as string | null,
     },
     locationNames,
