@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { saveRequestTasksAction } from "@/app/requests/task-actions";
+import { useEffect, useState, useTransition } from "react";
+import {
+  saveRequestTasksAction,
+  toggleRequestTaskAction,
+} from "@/app/requests/task-actions";
 import type { RequestTask } from "@/lib/db/request-tasks";
 
 type Draft = {
@@ -16,21 +19,28 @@ type RequestTaskEditorProps = {
   initialTasks: RequestTask[];
 };
 
+function toDrafts(tasks: RequestTask[]): Draft[] {
+  return tasks.map((task) => ({
+    key: task.id,
+    id: task.id,
+    title: task.title,
+    isCompleted: task.is_completed,
+  }));
+}
+
 export function RequestTaskEditor({
   requestId,
   initialTasks,
 }: RequestTaskEditorProps) {
-  const [tasks, setTasks] = useState<Draft[]>(
-    initialTasks.map((task) => ({
-      key: task.id,
-      id: task.id,
-      title: task.title,
-      isCompleted: task.is_completed,
-    })),
-  );
+  const [tasks, setTasks] = useState<Draft[]>(() => toDrafts(initialTasks));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingToggleId, setPendingToggleId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setTasks(toDrafts(initialTasks));
+  }, [initialTasks]);
 
   function updateTask(key: string, title: string) {
     setTasks((current) =>
@@ -64,6 +74,38 @@ export function RequestTaskEditor({
       return;
     }
     setTasks((current) => current.filter((item) => item.key !== task.key));
+  }
+
+  function toggleCompleted(task: Draft) {
+    if (!task.id || pendingToggleId || isPending) {
+      return;
+    }
+
+    const nextCompleted = !task.isCompleted;
+    const previous = tasks;
+    setError(null);
+    setMessage(null);
+    setPendingToggleId(task.id);
+    setTasks((current) =>
+      current.map((item) =>
+        item.key === task.key
+          ? { ...item, isCompleted: nextCompleted }
+          : item,
+      ),
+    );
+
+    startTransition(async () => {
+      const result = await toggleRequestTaskAction({
+        requestId,
+        taskId: task.id!,
+        completed: nextCompleted,
+      });
+      setPendingToggleId(null);
+      if (!result.ok) {
+        setTasks(previous);
+        setError(result.error);
+      }
+    });
   }
 
   function save() {
@@ -111,17 +153,64 @@ export function RequestTaskEditor({
       <div className="mt-3 grid gap-2">
         {tasks.map((task, index) => (
           <div className="flex min-w-0 items-center gap-2" key={task.key}>
-            <span className="w-6 shrink-0 text-sm text-slate-400">
-              {task.isCompleted ? "☑" : "☐"}
-            </span>
+            {task.id ? (
+              <button
+                aria-label={
+                  task.isCompleted
+                    ? "Снять отметку выполнения"
+                    : "Отметить выполненным"
+                }
+                aria-pressed={task.isCompleted}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 disabled:opacity-50"
+                disabled={pendingToggleId === task.id || isPending}
+                onClick={() => toggleCompleted(task)}
+                type="button"
+              >
+                <span
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border text-sm ${
+                    task.isCompleted
+                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      : "border-slate-300 bg-white text-transparent"
+                  }`}
+                >
+                  {task.isCompleted ? "✓" : "·"}
+                </span>
+              </button>
+            ) : (
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-sm text-slate-300">
+                ☐
+              </span>
+            )}
             <input
-              className="box-border h-11 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 text-sm"
+              className={`box-border h-11 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-slate-950 ${
+                task.isCompleted
+                  ? "text-slate-400 line-through"
+                  : "text-slate-950"
+              }`}
               onChange={(event) => updateTask(task.key, event.target.value)}
               value={task.title}
             />
-            <button className="h-11 w-11 rounded-xl border border-slate-200" onClick={() => moveTask(index, -1)} type="button">↑</button>
-            <button className="h-11 w-11 rounded-xl border border-slate-200" onClick={() => moveTask(index, 1)} type="button">↓</button>
-            <button className="h-11 rounded-xl border border-slate-200 px-3" onClick={() => removeTask(task)} type="button">✕</button>
+            <button
+              className="h-11 w-11 shrink-0 rounded-xl border border-slate-200"
+              onClick={() => moveTask(index, -1)}
+              type="button"
+            >
+              ↑
+            </button>
+            <button
+              className="h-11 w-11 shrink-0 rounded-xl border border-slate-200"
+              onClick={() => moveTask(index, 1)}
+              type="button"
+            >
+              ↓
+            </button>
+            <button
+              className="h-11 shrink-0 rounded-xl border border-slate-200 px-3"
+              onClick={() => removeTask(task)}
+              type="button"
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>
@@ -140,11 +229,11 @@ export function RequestTaskEditor({
         </button>
         <button
           className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white disabled:opacity-50"
-          disabled={isPending}
+          disabled={isPending || Boolean(pendingToggleId)}
           onClick={save}
           type="button"
         >
-          {isPending ? "Сохраняем…" : "Сохранить пункты"}
+          {isPending && !pendingToggleId ? "Сохраняем…" : "Сохранить пункты"}
         </button>
       </div>
       {message ? <p className="mt-3 text-sm text-emerald-800">{message}</p> : null}

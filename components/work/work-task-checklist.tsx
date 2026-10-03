@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toggleRequestTaskAction } from "@/app/requests/task-actions";
 import type { RequestTask } from "@/lib/db/request-tasks";
 
@@ -17,6 +17,10 @@ export function WorkTaskChecklist({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
 
   if (tasks.length === 0) {
     return null;
@@ -62,32 +66,42 @@ export function WorkTaskChecklist({
       </div>
       <ul className="mt-3 grid gap-2">
         {tasks.map((task) => (
-            <li className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200 px-3 py-2" key={task.id}>
-              <button
-                aria-pressed={task.is_completed}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-base disabled:opacity-60"
-                disabled={pendingId === task.id}
-                onClick={() => toggle(task)}
-                type="button"
-              >
-                <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
-                    task.is_completed
-                      ? "border-emerald-600 bg-emerald-600 text-white"
-                      : "border-slate-300 bg-white"
-                  }`}
-                >
-                  {task.is_completed ? "✓" : ""}
-                </span>
-              </button>
+          <li
+            className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200 px-3 py-2"
+            key={task.id}
+          >
+            <button
+              aria-label={
+                task.is_completed
+                  ? "Снять отметку выполнения"
+                  : "Отметить выполненным"
+              }
+              aria-pressed={task.is_completed}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-base disabled:opacity-60"
+              disabled={pendingId === task.id}
+              onClick={() => toggle(task)}
+              type="button"
+            >
               <span
-                className={`min-w-0 flex-1 text-base leading-6 ${
-                  task.is_completed ? "text-slate-400 line-through" : "text-slate-950"
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                  task.is_completed
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-slate-300 bg-white"
                 }`}
               >
-                {task.title}
+                {task.is_completed ? "✓" : ""}
               </span>
-            </li>
+            </button>
+            <span
+              className={`min-w-0 flex-1 text-base leading-6 ${
+                task.is_completed
+                  ? "text-slate-400 line-through"
+                  : "text-slate-950"
+              }`}
+            >
+              {task.title}
+            </span>
+          </li>
         ))}
       </ul>
       {error ? <p className="mt-3 text-sm text-rose-800">{error}</p> : null}

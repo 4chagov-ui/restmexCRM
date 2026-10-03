@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireManagerUser, requireMechanicUser } from "@/lib/auth/current-user";
+import { requireConfiguredProfile, requireManagerUser } from "@/lib/auth/current-user";
 import { canUseManagerArea } from "@/lib/auth/permissions";
 import { logRequestHistory } from "@/lib/db/request-history";
 import { listRequestTasks } from "@/lib/db/request-tasks";
@@ -13,6 +13,25 @@ function revalidateTaskPaths(requestId: string) {
   revalidatePath(`/work/requests/${requestId}`);
   revalidatePath("/today");
   revalidatePath("/work/today");
+}
+
+function userFacingError(message: string | null | undefined, fallback: string) {
+  if (!message) {
+    return fallback;
+  }
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("permission") ||
+    lower.includes("policy") ||
+    lower.includes("rls") ||
+    lower.includes("not allowed")
+  ) {
+    return "Недостаточно прав для изменения пункта.";
+  }
+  if (lower.includes("request_tasks") || lower.includes("schema cache")) {
+    return "Таблица пунктов работ недоступна. Проверьте миграцию.";
+  }
+  return fallback;
 }
 
 export async function saveRequestTasksAction(input: {
@@ -46,7 +65,10 @@ export async function saveRequestTasksAction(input: {
         .eq("id", task.id)
         .eq("request_id", input.requestId);
       if (error) {
-        return { ok: false as const, error: error.message };
+        return {
+          ok: false as const,
+          error: userFacingError(error.message, "Не удалось удалить пункт."),
+        };
       }
     }
   }
@@ -69,7 +91,10 @@ export async function saveRequestTasksAction(input: {
         .eq("id", previous.id)
         .eq("request_id", input.requestId);
       if (error) {
-        return { ok: false as const, error: error.message };
+        return {
+          ok: false as const,
+          error: userFacingError(error.message, "Не удалось сохранить пункты."),
+        };
       }
       continue;
     }
@@ -81,7 +106,10 @@ export async function saveRequestTasksAction(input: {
       is_completed: false,
     });
     if (error) {
-      return { ok: false as const, error: error.message };
+      return {
+        ok: false as const,
+        error: userFacingError(error.message, "Не удалось добавить пункт."),
+      };
     }
   }
 
@@ -94,10 +122,20 @@ export async function toggleRequestTaskAction(input: {
   taskId: string;
   completed: boolean;
 }) {
-  const context = await requireMechanicUser();
-  const request = await getMechanicRequestById(context.employee.id, input.requestId);
-  if (!request && !canUseManagerArea(context.role)) {
-    return { ok: false as const, error: "Заявка не найдена или недоступна." };
+  const context = await requireConfiguredProfile();
+
+  if (canUseManagerArea(context.role)) {
+    // Manager/admin can toggle any accessible request task.
+  } else if (context.role === "mechanic" && context.employee) {
+    const request = await getMechanicRequestById(
+      context.employee.id,
+      input.requestId,
+    );
+    if (!request) {
+      return { ok: false as const, error: "Заявка не найдена или недоступна." };
+    }
+  } else {
+    return { ok: false as const, error: "Недостаточно прав." };
   }
 
   const supabase = await createClient();
@@ -109,7 +147,10 @@ export async function toggleRequestTaskAction(input: {
     .maybeSingle();
 
   if (loadError) {
-    return { ok: false as const, error: loadError.message };
+    return {
+      ok: false as const,
+      error: userFacingError(loadError.message, "Не удалось загрузить пункт."),
+    };
   }
   if (!task) {
     return { ok: false as const, error: "Пункт не найден." };
@@ -138,8 +179,16 @@ export async function toggleRequestTaskAction(input: {
     .eq("request_id", input.requestId);
 
   if (error) {
-    return { ok: false as const, error: error.message };
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "Не удалось изменить пункт."),
+    };
   }
+
+  const actorName =
+    context.employee?.name?.trim() ||
+    context.profile.full_name?.trim() ||
+    "Пользователь";
 
   await logRequestHistory({
     requestId: input.requestId,
@@ -147,7 +196,7 @@ export async function toggleRequestTaskAction(input: {
     metadata: {
       taskId: input.taskId,
       taskTitle: task.title as string,
-      mechanicName: context.employee.name,
+      mechanicName: actorName,
     },
   }).catch(() => undefined);
 
