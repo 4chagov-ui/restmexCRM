@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import {
   saveRequestTasksAction,
   toggleRequestTaskAction,
@@ -26,6 +26,37 @@ function toDrafts(tasks: RequestTask[]): Draft[] {
     title: task.title,
     isCompleted: task.is_completed,
   }));
+}
+
+function AutoGrowTextarea({
+  className,
+  onChange,
+  value,
+}: {
+  className: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+    el.style.height = "auto";
+    el.style.height = `${Math.max(el.scrollHeight, 44)}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      className={className}
+      onChange={(event) => onChange(event.target.value)}
+      ref={ref}
+      rows={1}
+      value={value}
+    />
+  );
 }
 
 export function RequestTaskEditor({
@@ -141,8 +172,8 @@ export function RequestTaskEditor({
   const done = tasks.filter((task) => task.isCompleted).length;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-center justify-between gap-3">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-slate-950 sm:text-lg">Работы</h2>
         {tasks.length > 0 ? (
           <p className="text-sm font-medium text-slate-500">
@@ -150,9 +181,9 @@ export function RequestTaskEditor({
           </p>
         ) : null}
       </div>
-      <div className="mt-3 grid gap-2">
+      <div className="mt-3 grid min-w-0 gap-2">
         {tasks.map((task, index) => (
-          <div className="flex min-w-0 items-center gap-2" key={task.key}>
+          <div className="flex min-w-0 items-start gap-2" key={task.key}>
             {task.id ? (
               <button
                 aria-label={
@@ -161,7 +192,7 @@ export function RequestTaskEditor({
                     : "Отметить выполненным"
                 }
                 aria-pressed={task.isCompleted}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 disabled:opacity-50"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-xl border border-slate-200 disabled:opacity-50"
                 disabled={pendingToggleId === task.id || isPending}
                 onClick={() => toggleCompleted(task)}
                 type="button"
@@ -177,35 +208,35 @@ export function RequestTaskEditor({
                 </span>
               </button>
             ) : (
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-sm text-slate-300">
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center self-start text-sm text-slate-300">
                 ☐
               </span>
             )}
-            <input
-              className={`box-border h-11 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-slate-950 ${
+            <AutoGrowTextarea
+              className={`box-border min-h-11 min-w-0 flex-1 resize-none overflow-hidden whitespace-normal break-words rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-5 outline-none focus:border-slate-950 ${
                 task.isCompleted
                   ? "text-slate-400 line-through"
                   : "text-slate-950"
               }`}
-              onChange={(event) => updateTask(task.key, event.target.value)}
+              onChange={(value) => updateTask(task.key, value)}
               value={task.title}
             />
             <button
-              className="h-11 w-11 shrink-0 rounded-xl border border-slate-200"
+              className="hidden h-11 w-11 shrink-0 items-center justify-center self-start rounded-xl border border-slate-200 sm:inline-flex"
               onClick={() => moveTask(index, -1)}
               type="button"
             >
               ↑
             </button>
             <button
-              className="h-11 w-11 shrink-0 rounded-xl border border-slate-200"
+              className="hidden h-11 w-11 shrink-0 items-center justify-center self-start rounded-xl border border-slate-200 sm:inline-flex"
               onClick={() => moveTask(index, 1)}
               type="button"
             >
               ↓
             </button>
             <button
-              className="h-11 shrink-0 rounded-xl border border-slate-200 px-3"
+              className="hidden h-11 shrink-0 items-center justify-center self-start rounded-xl border border-slate-200 px-3 sm:inline-flex"
               onClick={() => removeTask(task)}
               type="button"
             >
