@@ -3,7 +3,7 @@ import Link from "next/link";
 export const mechanicFilterOptions = [
   { value: "all", label: "Все" },
   { value: "ivan", label: "Иван" },
-  { value: "oleg", label: "Олег" },
+  { value: "nikita", label: "Никита" },
   { value: "maxim", label: "Максим" },
   { value: "unassigned", label: "Не назначен" },
 ] as const;

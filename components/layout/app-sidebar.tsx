@@ -71,7 +71,7 @@ export function AppSidebar() {
             Механики
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {["Иван", "Олег", "Максим"].map((name) => (
+            {["Иван", "Никита", "Максим"].map((name) => (
               <span
                 className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm"
                 key={name}

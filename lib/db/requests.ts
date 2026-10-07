@@ -64,7 +64,7 @@ export type MechanicListFilter =
   | "all"
   | "unassigned"
   | "ivan"
-  | "oleg"
+  | "nikita"
   | "maxim";
 
 type GetRequestsOptions = {
@@ -141,7 +141,7 @@ const mechanicNameNeedles: Record<
   string
 > = {
   ivan: "иван",
-  oleg: "олег",
+  nikita: "никита",
   maxim: "максим",
 };
 
